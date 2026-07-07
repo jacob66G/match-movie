@@ -1,0 +1,55 @@
+# Development Environments & Editors (VS Code / Cursor / JetBrains)
+.vscode/
+frontend/match-movie/.vscode/
+backend/match-movie/.vscode/
+*.code-workspace
+**/mcp.json
+.cr/
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# Backend (Java / Spring Boot / Maven)
+**/target/
+**.class
+*.log
+/logs/
+/tmp/
+*.jar
+*.war
+*.ear
+
+# Frontend (Angular / NodeJS)
+**/node_modules/
+**/dist/
+**/.angular/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.eslintcache
+
+# Infrastructure & Database (Docker / PostgreSQL / RabbitMQ)
+.postgres_data/
+.rabbitmq_data/
+postgres_data/
+rabbitmq_data/
+
+# Sensitive Data & Security Keys
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.jks
+*.p12
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini

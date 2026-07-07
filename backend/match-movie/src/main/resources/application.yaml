@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: match-movie
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/${DB_NAME:match-movie-db}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:open-api-key}

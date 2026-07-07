@@ -1,0 +1,12 @@
+node_modules
+.angular
+.git
+dist
+README.md
+npm-debug.log
+Dockerfile*
+docker-compose*
+.gitignore
+LICENSE
+.vscode
+.idea
