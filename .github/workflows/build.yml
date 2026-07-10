@@ -1,0 +1,48 @@
+name: Match Movie - CI
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  backend-ci:
+    name: Backend CI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build and Test
+        run: |
+          cd backend/match-movie
+          mvn -B clean package -DskipTests
+
+  frontend-ci:
+    name: Frontend CI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: frontend/match-movie/package-lock.json
+        
+      - name: Install and Build
+        run: |
+          cd frontend/match-movie
+          npm ci
+          npm run build -- --configuration=production
