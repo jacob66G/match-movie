@@ -10,3 +10,10 @@ spring:
   ai:
     openai:
       api-key: ${OPENAI_API_KEY:open-api-key}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+  flyway:
+    enabled: true
