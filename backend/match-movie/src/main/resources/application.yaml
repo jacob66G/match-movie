@@ -1,19 +1,16 @@
 spring:
+  profiles:
+    active: ${APP_PROFILE:dev}
   application:
     name: match-movie
 
-  datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:5432/${DB_NAME:match-movie-db}
-    username: ${DB_USER:postgres}
-    password: ${DB_PASSWORD:postgres}
+  threads:
+    virtual:
+      enabled: true
 
-  ai:
-    openai:
-      api-key: ${OPENAI_API_KEY:open-api-key}
+  flyway:
+    enabled: true
 
   jpa:
     hibernate:
       ddl-auto: validate
-
-  flyway:
-    enabled: true
