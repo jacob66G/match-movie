@@ -64,7 +64,6 @@ public class UserService {
     private String getRequiredClaim(Jwt jwt, String claimName) {
         String value = jwt.getClaimAsString(claimName);
         if (!StringUtils.hasText(value)) {
-
             throw new InvalidTokenException(
                     new ApplicationLog(Level.WARN, "Cannot provision user {}: missing required JWT claim {}", jwt.getSubject(), claimName),
                     "error.authentication.missing.claim", claimName
