@@ -1,9 +1,9 @@
 package io.github.jacob66g.matchmovie.common.exception;
 
-import org.slf4j.event.Level;
+import io.github.jacob66g.matchmovie.common.log.ApplicationLog;
 
 public class InvalidTokenException extends ApplicationException {
-    public InvalidTokenException(Level logLevel, String logMessage, String messageKey, Object... args) {
-        super(logLevel, logMessage, messageKey, args);
+    public InvalidTokenException(ApplicationLog log, String messageKey, Object... args) {
+        super(log, messageKey, args);
     }
 }
