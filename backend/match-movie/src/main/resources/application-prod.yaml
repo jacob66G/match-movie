@@ -8,7 +8,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issue r-uri: ${KEYCLOAK_ISSUER_URI}
+          issuer-uri: ${KEYCLOAK_ISSUER_URI}
 
   ai:
     openai:
@@ -24,6 +24,6 @@ spring:
 logging:
   level:
     root: WARN
-    com.matchmovie: INFO
+    io.github.jacob66g.matchmovie: INFO
     org.springframework: WARN
     org.hibernate: WARN

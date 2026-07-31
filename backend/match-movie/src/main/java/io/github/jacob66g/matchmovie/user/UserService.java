@@ -1,10 +1,9 @@
 package io.github.jacob66g.matchmovie.user;
 
-import io.github.jacob66g.matchmovie.common.exception.InvalidTokenException;
-import io.github.jacob66g.matchmovie.common.log.ApplicationLog;
+import io.github.jacob66g.matchmovie.common.exception.ApplicationException;
+import io.github.jacob66g.matchmovie.user.exception.UserErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.event.Level;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,16 +19,17 @@ public class UserService {
     private final UserRepository userRepository;
 
     @Transactional
-    public void syncUserFromToken(Jwt jwt, String preferredLocate) {
+    public UUID syncUserFromToken(Jwt jwt, String preferredLocale) {
         UUID userId = extractAndValidateUserId(jwt.getSubject());
 
         //TODO cache user ids
         if (!userRepository.existsById(userId)) {
-            createNewUser(userId, jwt, preferredLocate);
+            createNewUser(userId, jwt, preferredLocale);
         }
+        return userId;
     }
 
-    private void createNewUser(UUID userId, Jwt jwt, String preferredLocate) {
+    private void createNewUser(UUID userId, Jwt jwt, String preferredLocale) {
         String email = getRequiredClaim(jwt, "email");
         String username = getRequiredClaim(jwt, "preferred_username");
 
@@ -37,37 +37,31 @@ public class UserService {
                 .id(userId)
                 .email(email)
                 .username(username)
-                .preferredLocale(preferredLocate)
+                .preferredLocale(preferredLocale)
                 .build();
 
         userRepository.saveAndFlush(user);
-        log.info("New user provisioned: userId={} email={}", userId, email);
+        log.info("New user provisioned: userId={}", userId);
     }
 
     private UUID extractAndValidateUserId(String sub) {
         if (!StringUtils.hasText(sub)) {
-            throw new InvalidTokenException(
-                    new ApplicationLog(Level.WARN, "Missing required JWT claim 'sub'"),
-                    "error.authentication.missing.claim", "sub"
-            );
+            throw new ApplicationException(UserErrorCode.MISSING_SUB_CLAIM, "sub");
         }
         try {
             return UUID.fromString(sub);
-        } catch (IllegalArgumentException e) {
-            throw new InvalidTokenException(
-                    new ApplicationLog(Level.ERROR, "Invalid UUID format in JWT claim 'sub': {}", sub),
-                    "error.authentication.invalid.sub.format", sub
-            );
+        } catch (IllegalArgumentException ex) {
+            throw new ApplicationException(UserErrorCode.INVALID_SUB_FORMAT)
+                    .causedBy(ex)
+                    .with("sub", sub);
         }
     }
 
     private String getRequiredClaim(Jwt jwt, String claimName) {
         String value = jwt.getClaimAsString(claimName);
         if (!StringUtils.hasText(value)) {
-            throw new InvalidTokenException(
-                    new ApplicationLog(Level.WARN, "Cannot provision user {}: missing required JWT claim {}", jwt.getSubject(), claimName),
-                    "error.authentication.missing.claim", claimName
-            );
+            throw new ApplicationException(UserErrorCode.MISSING_CLAIM_ON_PROVISION, claimName)
+                    .with("claim", claimName);
         }
         return value;
     }

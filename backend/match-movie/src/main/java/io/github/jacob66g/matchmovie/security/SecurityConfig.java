@@ -3,7 +3,9 @@ package io.github.jacob66g.matchmovie.security;
 import io.github.jacob66g.matchmovie.security.exceptionhandling.CustomAccessDeniedHandler;
 import io.github.jacob66g.matchmovie.security.exceptionhandling.CustomAuthenticationEntryPoint;
 import io.github.jacob66g.matchmovie.user.UserProvisioningFilter;
+import io.github.jacob66g.matchmovie.user.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,6 +20,8 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.servlet.HandlerExceptionResolver;
+import org.springframework.web.servlet.LocaleResolver;
 
 import java.util.List;
 
@@ -36,12 +40,13 @@ public class SecurityConfig {
 
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 
-    private final UserProvisioningFilter userProvisioningFilter;
-
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, UserService userService, LocaleResolver localeResolver, @Qualifier("handlerExceptionResolver") HandlerExceptionResolver handlerExceptionResolver) throws Exception {
         JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
         jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(new KeycloakRoleConverter(clientId));
+
+        UserProvisioningFilter userProvisioningFilter =
+                new UserProvisioningFilter(userService, handlerExceptionResolver, localeResolver);
 
         http
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

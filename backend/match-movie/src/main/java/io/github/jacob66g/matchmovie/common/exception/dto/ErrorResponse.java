@@ -2,12 +2,16 @@ package io.github.jacob66g.matchmovie.common.exception.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-@JsonInclude(JsonInclude.Include.NON_EMPTY)
+import java.time.Instant;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record ErrorResponse(
-        String timestamp,
-        Integer status,
+        Instant timestamp,
+        int status,
         String error,
+        String code,
         String message,
-        String path
+        String path,
+        String requestId
 ) {
 }

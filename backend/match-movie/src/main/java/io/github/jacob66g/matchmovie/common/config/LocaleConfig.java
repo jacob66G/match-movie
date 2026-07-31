@@ -13,7 +13,8 @@ import java.util.Locale;
 public class LocaleConfig {
 
     private static final String LOCALE_HEADER = "X-Locale";
-    private static final List<Locale> SUPPORTED = List.of(Locale.ENGLISH, Locale.of("pl", "PL"));
+    private static final Locale DEFAULT = Locale.ENGLISH;
+    private static final List<Locale> SUPPORTED = List.of(DEFAULT, Locale.of("pl"));
 
     @Bean
     public LocaleResolver localeResolver() {
@@ -22,13 +23,13 @@ public class LocaleConfig {
             public Locale resolveLocale(HttpServletRequest request) {
                 String header = request.getHeader(LOCALE_HEADER);
                 if (header != null) {
-                    Locale requested = Locale.forLanguageTag(header);
-                    if (SUPPORTED.contains(requested)) {
-                        return requested;
+                    Locale fromHeader = match(Locale.forLanguageTag(header));
+                    if (fromHeader != null) {
+                        return fromHeader;
                     }
                 }
-                Locale accepted = request.getLocale();
-                return SUPPORTED.contains(accepted) ? accepted : Locale.ENGLISH;
+                Locale fromAcceptLanguage = match(request.getLocale());
+                return fromAcceptLanguage != null ? fromAcceptLanguage : DEFAULT;
             }
 
             @Override
@@ -36,5 +37,18 @@ public class LocaleConfig {
                 throw new UnsupportedOperationException("Use X-Locale header instead");
             }
         };
+    }
+
+    /**
+     * Matches on language only, so both {@code pl} and {@code pl-PL} resolve to the supported locale.
+     */
+    private static Locale match(Locale requested) {
+        if (requested == null || requested.getLanguage().isEmpty()) {
+            return null;
+        }
+        return SUPPORTED.stream()
+                .filter(supported -> supported.getLanguage().equals(requested.getLanguage()))
+                .findFirst()
+                .orElse(null);
     }
 }

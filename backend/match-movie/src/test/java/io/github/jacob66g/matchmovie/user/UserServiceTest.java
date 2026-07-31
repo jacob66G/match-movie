@@ -1,6 +1,7 @@
 package io.github.jacob66g.matchmovie.user;
 
-import io.github.jacob66g.matchmovie.common.exception.InvalidTokenException;
+import io.github.jacob66g.matchmovie.common.exception.ApplicationException;
+import io.github.jacob66g.matchmovie.user.exception.UserErrorCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,7 +17,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -61,24 +62,30 @@ class UserServiceTest {
 
 
     @Test
-    void should_throw_InvalidTokenException_when_sub_claim_is_missing() {
+    void should_throw_ApplicationException_when_sub_claim_is_missing() {
         //given
         testClaims.remove("sub");
         Jwt jwt = buildJwt(testClaims);
 
         //when + then
-        assertThrows(InvalidTokenException.class, () -> userService.syncUserFromToken(jwt, TEST_LOCALE));
+        assertThatThrownBy(() -> userService.syncUserFromToken(jwt, TEST_LOCALE))
+                .isInstanceOf(ApplicationException.class)
+                .extracting("errorCode")
+                .isEqualTo(UserErrorCode.MISSING_SUB_CLAIM);
         verify(userRepository, never()).existsById(any());
     }
 
     @Test
-    void should_throw_InvalidTokenException_when_sub_claim_is_not_valid_uuid() {
+    void should_throw_ApplicationException_when_sub_claim_is_not_valid_uuid() {
         //given
         testClaims.put("sub", "INVALID_UUID_FORMAT");
         Jwt jwt = buildJwt(testClaims);
 
         //when + then
-        assertThrows(InvalidTokenException.class, () -> userService.syncUserFromToken(jwt, TEST_LOCALE));
+        assertThatThrownBy(() -> userService.syncUserFromToken(jwt, TEST_LOCALE))
+                .isInstanceOf(ApplicationException.class)
+                .extracting("errorCode")
+                .isEqualTo(UserErrorCode.INVALID_SUB_FORMAT);
         verify(userRepository, never()).existsById(any());
     }
 
@@ -103,14 +110,17 @@ class UserServiceTest {
     }
 
     @Test
-    void should_throw_InvalidTokenException_when_required_claim_is_missing() {
+    void should_throw_ApplicationException_when_required_claim_is_missing() {
         //given
         testClaims.remove("email");
         Jwt jwt = buildJwt(testClaims);
         when(userRepository.existsById(TEST_USER_ID)).thenReturn(false);
 
         //when + then
-        assertThrows(InvalidTokenException.class, () -> userService.syncUserFromToken(jwt, TEST_LOCALE));
+        assertThatThrownBy(() -> userService.syncUserFromToken(jwt, TEST_LOCALE))
+                .isInstanceOf(ApplicationException.class)
+                .extracting("errorCode")
+                .isEqualTo(UserErrorCode.MISSING_CLAIM_ON_PROVISION);
         verify(userRepository, never()).saveAndFlush(any());
     }
 

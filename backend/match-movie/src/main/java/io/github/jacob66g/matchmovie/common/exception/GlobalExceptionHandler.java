@@ -1,114 +1,105 @@
 package io.github.jacob66g.matchmovie.common.exception;
 
 import io.github.jacob66g.matchmovie.common.exception.dto.ErrorResponse;
-import io.github.jacob66g.matchmovie.common.log.ApplicationLog;
+import io.github.jacob66g.matchmovie.common.exception.errorcode.CommonErrorCode;
+import io.github.jacob66g.matchmovie.common.exception.errorcode.ErrorCode;
+import io.github.jacob66g.matchmovie.common.log.LogContext;
+import io.github.jacob66g.matchmovie.common.log.LogPolicy;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.event.Level;
 import org.springframework.context.MessageSource;
+import org.springframework.context.NoSuchMessageException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.LocaleResolver;
 
 import java.time.Instant;
 import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
 
+import static io.github.jacob66g.matchmovie.common.log.LogSanitizer.sanitize;
 
 @RestControllerAdvice
 @RequiredArgsConstructor
 @Slf4j
 public class GlobalExceptionHandler {
 
+    private static final Object[] NO_ARGS = new Object[0];
+
     private final MessageSource messageSource;
     private final LocaleResolver localeResolver;
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleUnexpected(Exception ex, HttpServletRequest request) {
-        logApplicationException(ex, Level.ERROR, "Unexpected error at {}", request.getRequestURI());
-        return build(HttpStatus.INTERNAL_SERVER_ERROR, "error.internal", null, request);
-    }
-
-    @ExceptionHandler(InvalidTokenException.class)
-    public ResponseEntity<ErrorResponse> handleAuthentication(InvalidTokenException ex, HttpServletRequest request) {
-        logApplicationException(ex);
-        return build(HttpStatus.UNAUTHORIZED, ex, request);
+    @ExceptionHandler(ApplicationException.class)
+    public ResponseEntity<ErrorResponse> handleApplicationException(ApplicationException ex, HttpServletRequest request) {
+        return handle(ex, ex.getErrorCode(), ex.getMessageArgs(), ex.getContext(), request);
     }
 
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ErrorResponse> handleAuthentication(HttpServletRequest request) {
-        logApplicationException(
-                null, Level.WARN, "Unauthorized access attempt: URI=[{}] {} | UserAgent=[{}]",
-                request.getMethod(), request.getRequestURI(), request.getHeader("User-Agent")
-        );
-
-        return build(HttpStatus.UNAUTHORIZED, "error.unauthorized", null, request);
+    public ResponseEntity<ErrorResponse> handleAuthentication(AuthenticationException ex, HttpServletRequest request) {
+        return handle(ex, CommonErrorCode.UNAUTHORIZED, NO_ARGS, Map.of("reason", sanitize(ex.getMessage())), request);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ErrorResponse> handleAccessDenied(HttpServletRequest request) {
-        logApplicationException(
-                null, Level.WARN, "Access Denied: User [%s] tried to access protected URL [%s] with method [%s] from IP [%s]",
-                extractUsername(), request.getRequestURI(), request.getMethod(), request.getRemoteAddr()
-        );
-
-        return build(HttpStatus.FORBIDDEN, "error.access.denied", null, request);
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
+        return handle(ex, CommonErrorCode.ACCESS_DENIED, NO_ARGS, Map.of("ip", sanitize(request.getRemoteAddr())), request);
     }
 
-    private ResponseEntity<ErrorResponse> build(HttpStatus status, ApplicationException ex, HttpServletRequest request) {
-        return build(status, ex.getMessageKey(), ex.getArgs(), request);
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleUnexpected(Exception ex, HttpServletRequest request) {
+        return handle(ex, CommonErrorCode.INTERNAL_ERROR, NO_ARGS, Map.of("type", ex.getClass().getSimpleName()), request);
     }
 
-    private ResponseEntity<ErrorResponse> build(HttpStatus status, String messageKey, Object[] args, HttpServletRequest request) {
-        Locale locale = localeResolver.resolveLocale(request);
-        String message = messageSource.getMessage(messageKey, args, locale);
-        ErrorResponse response = new ErrorResponse(
-                Instant.now().toString(),
+    private ResponseEntity<ErrorResponse> handle(Exception ex, ErrorCode errorCode, Object[] messageArgs,
+                                                 Map<String, Object> context, HttpServletRequest request) {
+        HttpStatus status = errorCode.status();
+        logFailure(ex, errorCode, status, context, request);
+        return ResponseEntity.status(status).body(buildBody(errorCode, status, messageArgs, request));
+    }
+
+    private void logFailure(Exception ex, ErrorCode errorCode, HttpStatus status, Map<String, Object> context, HttpServletRequest request) {
+        log.atLevel(errorCode.logLevel())
+                .setCause(LogPolicy.includeStackTrace(status) ? ex : null)
+                .log("{} {} -> {} {} {}",
+                        request.getMethod(),
+                        request.getRequestURI(),
+                        status.value(),
+                        errorCode.code(),
+                        formatContext(context));
+    }
+
+    private ErrorResponse buildBody(ErrorCode errorCode, HttpStatus status, Object[] messageArgs, HttpServletRequest request) {
+        return new ErrorResponse(
+                Instant.now(),
                 status.value(),
                 status.getReasonPhrase(),
-                message,
-                request.getRequestURI()
+                errorCode.code(),
+                resolveMessage(errorCode, messageArgs, localeResolver.resolveLocale(request)),
+                request.getRequestURI(),
+                LogContext.requestId()
         );
-        return ResponseEntity.status(status).body(response);
     }
 
-    private void logApplicationException(ApplicationException ex) {
-        ApplicationLog log = ex.getLog();
-
-        if (log != null) {
-            logApplicationException(ex, log.level(), log.message(), log.args());
+    private String resolveMessage(ErrorCode errorCode, Object[] messageArgs, Locale locale) {
+        try {
+            return messageSource.getMessage(errorCode.messageKey(), messageArgs, locale);
+        } catch (NoSuchMessageException ex) {
+            log.warn("Missing i18n key [{}] for error code [{}] and locale [{}]", errorCode.messageKey(), errorCode.code(), locale);
+            return errorCode.code();
         }
     }
 
-    private void logApplicationException(Exception ex, Level logLevel, String logMessage, Object... logArgs) {
-        switch (logLevel) {
-            case WARN -> log.warn(logMessage, logArgs);
-            case ERROR -> log.atError().setCause(ex).log(logMessage, logArgs);
-            default -> log.info(logMessage, logArgs);
+    private String formatContext(Map<String, Object> context) {
+        if (context.isEmpty()) {
+            return "";
         }
-    }
-
-    private String extractUsername() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
-        if (auth != null && auth.getPrincipal() instanceof Jwt jwt) {
-            String preferredUsername = jwt.getClaimAsString("preferred_username");
-            if (preferredUsername != null && !preferredUsername.isBlank()) {
-                return preferredUsername;
-            }
-            String email = jwt.getClaimAsString("email");
-            if (email != null && !email.isBlank()) {
-                return email;
-            }
-        }
-
-        return "ANONYMOUS";
+        return context.entrySet().stream()
+                .map(entry -> entry.getKey() + "=" + sanitize(entry.getValue()))
+                .collect(Collectors.joining(", ", "[", "]"));
     }
 }

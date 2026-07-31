@@ -1,6 +1,5 @@
 package io.github.jacob66g.matchmovie.user;
 
-import io.github.jacob66g.matchmovie.common.exception.ApplicationException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -9,7 +8,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 import org.springframework.web.servlet.LocaleResolver;
@@ -17,7 +15,6 @@ import org.springframework.web.servlet.LocaleResolver;
 import java.io.IOException;
 import java.util.Locale;
 
-@Component
 public class UserProvisioningFilter extends OncePerRequestFilter {
 
     private final UserService userService;
@@ -39,7 +36,7 @@ public class UserProvisioningFilter extends OncePerRequestFilter {
             try {
                 Locale locale = localeResolver.resolveLocale(request);
                 userService.syncUserFromToken(jwt, locale.toString());
-            } catch (ApplicationException ex) {
+            } catch (Exception ex) {
                 handlerExceptionResolver.resolveException(request, response, null, ex);
                 return;
             }

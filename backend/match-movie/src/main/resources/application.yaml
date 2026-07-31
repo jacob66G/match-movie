@@ -19,3 +19,7 @@ spring:
     basename: i18n/messages
     encoding: UTF-8
     fallback-to-system-locale: false
+
+logging:
+  pattern:
+    correlation: "[%X{requestId:-} %X{userId:-}] "

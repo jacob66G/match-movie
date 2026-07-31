@@ -24,6 +24,6 @@ spring:
 logging:
   level:
     root: INFO
-    com.matchmovie: DEBUG
+    io.github.jacob66g.matchmovie: DEBUG
     org.springframework.security: DEBUG
     org.hibernate.SQL: DEBUG
