@@ -1,7 +1,10 @@
-package io.github.jacob66g.matchmovie.user;
+package io.github.jacob66g.matchmovie.user.service;
 
 import io.github.jacob66g.matchmovie.common.exception.ApplicationException;
+import io.github.jacob66g.matchmovie.user.repository.UserRepository;
+import io.github.jacob66g.matchmovie.user.dto.UserResponse;
 import io.github.jacob66g.matchmovie.user.exception.UserErrorCode;
+import io.github.jacob66g.matchmovie.user.model.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -17,6 +20,15 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
+
+    @Transactional(readOnly = true)
+    public UserResponse getUserInfo(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApplicationException(UserErrorCode.USER_NOT_FOUND)
+                        .with("userId", userId));
+
+        return UserResponse.from(user);
+    }
 
     @Transactional
     public UUID syncUserFromToken(Jwt jwt, String preferredLocale) {

@@ -1,5 +1,6 @@
-package io.github.jacob66g.matchmovie.user;
+package io.github.jacob66g.matchmovie.user.common;
 
+import io.github.jacob66g.matchmovie.user.service.UserService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

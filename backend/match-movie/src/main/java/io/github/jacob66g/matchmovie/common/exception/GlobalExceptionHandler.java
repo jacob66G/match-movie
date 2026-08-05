@@ -10,17 +10,22 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
 import org.springframework.context.NoSuchMessageException;
+import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.LocaleResolver;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static io.github.jacob66g.matchmovie.common.log.LogSanitizer.sanitize;
@@ -40,6 +45,16 @@ public class GlobalExceptionHandler {
         return handle(ex, ex.getErrorCode(), ex.getMessageArgs(), ex.getContext(), request);
     }
 
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpServletRequest request) {
+        return handle(ex, CommonErrorCode.VALIDATION_ERROR, NO_ARGS, Map.of("fields", formatFieldErrorsForLog(ex)), formatFieldErrors(ex), request);
+    }
+
+    @ExceptionHandler(PropertyReferenceException.class)
+    public ResponseEntity<ErrorResponse> handlePropertyReference(PropertyReferenceException ex, HttpServletRequest request) {
+        return handle(ex, CommonErrorCode.VALIDATION_ERROR, NO_ARGS, Map.of("property", sanitize(ex.getPropertyName())), request);
+    }
+
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponse> handleAuthentication(AuthenticationException ex, HttpServletRequest request) {
         return handle(ex, CommonErrorCode.UNAUTHORIZED, NO_ARGS, Map.of("reason", sanitize(ex.getMessage())), request);
@@ -57,9 +72,15 @@ public class GlobalExceptionHandler {
 
     private ResponseEntity<ErrorResponse> handle(Exception ex, ErrorCode errorCode, Object[] messageArgs,
                                                  Map<String, Object> context, HttpServletRequest request) {
+        return handle(ex, errorCode, messageArgs, context, null, request);
+    }
+
+    private ResponseEntity<ErrorResponse> handle(Exception ex, ErrorCode errorCode, Object[] messageArgs,
+                                                 Map<String, Object> context, Map<String, String> fieldErrors,
+                                                 HttpServletRequest request) {
         HttpStatus status = errorCode.status();
         logFailure(ex, errorCode, status, context, request);
-        return ResponseEntity.status(status).body(buildBody(errorCode, status, messageArgs, request));
+        return ResponseEntity.status(status).body(buildBody(errorCode, status, messageArgs, fieldErrors, request));
     }
 
     private void logFailure(Exception ex, ErrorCode errorCode, HttpStatus status, Map<String, Object> context, HttpServletRequest request) {
@@ -73,7 +94,9 @@ public class GlobalExceptionHandler {
                         formatContext(context));
     }
 
-    private ErrorResponse buildBody(ErrorCode errorCode, HttpStatus status, Object[] messageArgs, HttpServletRequest request) {
+
+    private ErrorResponse buildBody(ErrorCode errorCode, HttpStatus status, Object[] messageArgs,
+                                    Map<String, String> fieldErrors, HttpServletRequest request) {
         return new ErrorResponse(
                 Instant.now(),
                 status.value(),
@@ -81,7 +104,8 @@ public class GlobalExceptionHandler {
                 errorCode.code(),
                 resolveMessage(errorCode, messageArgs, localeResolver.resolveLocale(request)),
                 request.getRequestURI(),
-                LogContext.requestId()
+                LogContext.requestId(),
+                fieldErrors
         );
     }
 
@@ -92,6 +116,22 @@ public class GlobalExceptionHandler {
             log.warn("Missing i18n key [{}] for error code [{}] and locale [{}]", errorCode.messageKey(), errorCode.code(), locale);
             return errorCode.code();
         }
+    }
+
+    private Map<String, String> formatFieldErrors(MethodArgumentNotValidException ex) {
+        return ex.getBindingResult().getFieldErrors().stream()
+                .collect(Collectors.toMap(
+                        FieldError::getField,
+                        fieldError -> Objects.requireNonNullElse(fieldError.getDefaultMessage(), "not valid"),
+                        (ms1, ms2) -> ms1 + ", " + ms2,
+                        LinkedHashMap::new
+                ));
+    }
+
+    private String formatFieldErrorsForLog(MethodArgumentNotValidException ex) {
+        return ex.getBindingResult().getFieldErrors().stream()
+                .map(fieldError -> fieldError.getField() + "=" + fieldError.getCode())
+                .collect(Collectors.joining("; "));
     }
 
     private String formatContext(Map<String, Object> context) {

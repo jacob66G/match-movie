@@ -2,6 +2,9 @@ package io.github.jacob66g.matchmovie.user;
 
 import io.github.jacob66g.matchmovie.common.exception.ApplicationException;
 import io.github.jacob66g.matchmovie.user.exception.UserErrorCode;
+import io.github.jacob66g.matchmovie.user.model.User;
+import io.github.jacob66g.matchmovie.user.repository.UserRepository;
+import io.github.jacob66g.matchmovie.user.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

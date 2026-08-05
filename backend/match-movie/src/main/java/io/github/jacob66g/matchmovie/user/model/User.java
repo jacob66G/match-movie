@@ -1,9 +1,9 @@
-package io.github.jacob66g.matchmovie.user;
+package io.github.jacob66g.matchmovie.user.model;
 
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
@@ -16,7 +16,7 @@ import java.util.UUID;
 public class User {
 
     @Id
-    @Column(name = "id", nullable = false, updatable = false)
+    @Column(name = "id")
     private UUID id;
 
     @Column(name = "email", nullable = false, unique = true)
@@ -26,13 +26,13 @@ public class User {
     private String username;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "preferred_locale")
     private String preferredLocale;
 
     @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
+    public void onCreate() {
+        this.createdAt = Instant.now();
     }
 }

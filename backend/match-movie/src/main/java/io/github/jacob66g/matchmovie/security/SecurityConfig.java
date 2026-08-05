@@ -2,8 +2,8 @@ package io.github.jacob66g.matchmovie.security;
 
 import io.github.jacob66g.matchmovie.security.exceptionhandling.CustomAccessDeniedHandler;
 import io.github.jacob66g.matchmovie.security.exceptionhandling.CustomAuthenticationEntryPoint;
-import io.github.jacob66g.matchmovie.user.UserProvisioningFilter;
-import io.github.jacob66g.matchmovie.user.UserService;
+import io.github.jacob66g.matchmovie.user.common.UserProvisioningFilter;
+import io.github.jacob66g.matchmovie.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;

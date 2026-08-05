@@ -3,6 +3,7 @@ package io.github.jacob66g.matchmovie.common.exception.dto;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.time.Instant;
+import java.util.Map;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ErrorResponse(
@@ -12,6 +13,7 @@ public record ErrorResponse(
         String code,
         String message,
         String path,
-        String requestId
+        String requestId,
+        Map<String, String> fieldErrors
 ) {
 }
