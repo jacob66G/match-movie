@@ -30,3 +30,30 @@ spring:
 logging:
   pattern:
     correlation: "[%X{requestId:-} %X{userId:-}] "
+
+client:
+  tmdb:
+    api: https://api.themoviedb.org
+    version: "3"
+    language: en-US
+    image-base-url: https://image.tmdb.org/t/p/
+    auth:
+      token: ${TMDB_AUTH_TOKEN:demo-tmdb-token}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      tmdb:
+        sliding-window-size: 20
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 5
+        automatic-transition-from-open-to-half-open-enabled: true
+        ignore-exceptions:
+          - io.github.jacob66g.matchmovie.common.exception.ApplicationException
+  ratelimiter:
+    instances:
+      tmdb:
+        limit-for-period: 30
+        limit-refresh-period: 1s
+        timeout-duration: 5s

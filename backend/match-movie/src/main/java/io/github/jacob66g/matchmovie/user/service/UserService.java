@@ -34,7 +34,6 @@ public class UserService {
     public UUID syncUserFromToken(Jwt jwt, String preferredLocale) {
         UUID userId = extractAndValidateUserId(jwt.getSubject());
 
-        //TODO cache user ids
         if (!userRepository.existsById(userId)) {
             createNewUser(userId, jwt, preferredLocale);
         }
