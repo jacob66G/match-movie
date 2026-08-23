@@ -7,13 +7,18 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum UserErrorCode implements ErrorCode {
 
-    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "error.user.not.found"),
-    MISSING_SUB_CLAIM(HttpStatus.UNAUTHORIZED, "error.authentication.missing.claim"),
-    INVALID_SUB_FORMAT(HttpStatus.UNAUTHORIZED, "error.authentication.invalid.sub.format"),
-    MISSING_CLAIM_ON_PROVISION(HttpStatus.UNAUTHORIZED, "error.authentication.missing.claim");
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_NOT_FOUND",
+            "No user exists for the given identifier."),
+    MISSING_SUB_CLAIM(HttpStatus.UNAUTHORIZED, "USER_INVALID_TOKEN",
+            "The access token is not usable for user provisioning."),
+    INVALID_SUB_FORMAT(HttpStatus.UNAUTHORIZED, "USER_INVALID_TOKEN",
+            "The access token is not usable for user provisioning."),
+    MISSING_CLAIM_ON_PROVISION(HttpStatus.UNAUTHORIZED, "USER_INVALID_TOKEN",
+            "The access token is not usable for user provisioning.");
 
     private final HttpStatus status;
-    private final String messageKey;
+    private final String code;
+    private final String detail;
 
     @Override
     public HttpStatus status() {
@@ -21,7 +26,12 @@ public enum UserErrorCode implements ErrorCode {
     }
 
     @Override
-    public String messageKey() {
-        return messageKey;
+    public String code() {
+        return code;
+    }
+
+    @Override
+    public String detail() {
+        return detail;
     }
 }

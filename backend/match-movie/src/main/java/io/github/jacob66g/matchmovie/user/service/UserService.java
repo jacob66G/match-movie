@@ -57,7 +57,8 @@ public class UserService {
 
     private UUID extractAndValidateUserId(String sub) {
         if (!StringUtils.hasText(sub)) {
-            throw new ApplicationException(UserErrorCode.MISSING_SUB_CLAIM, "sub");
+            throw new ApplicationException(UserErrorCode.MISSING_SUB_CLAIM)
+                    .with("claim", "sub");
         }
         try {
             return UUID.fromString(sub);
@@ -71,7 +72,7 @@ public class UserService {
     private String getRequiredClaim(Jwt jwt, String claimName) {
         String value = jwt.getClaimAsString(claimName);
         if (!StringUtils.hasText(value)) {
-            throw new ApplicationException(UserErrorCode.MISSING_CLAIM_ON_PROVISION, claimName)
+            throw new ApplicationException(UserErrorCode.MISSING_CLAIM_ON_PROVISION)
                     .with("claim", claimName);
         }
         return value;

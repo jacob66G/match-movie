@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 public final class SortWhitelist<E extends Enum<E> & SortableField> {
 
     private final Map<String, E> byApiName;
-    private final String allowedApiNames;
+    private final List<String> allowedApiNames;
 
     private SortWhitelist(Class<E> fieldType) {
         this.byApiName = Arrays.stream(fieldType.getEnumConstants())
@@ -29,7 +29,7 @@ public final class SortWhitelist<E extends Enum<E> & SortableField> {
                         LinkedHashMap::new));
         this.allowedApiNames = byApiName.values().stream()
                 .map(SortableField::apiName)
-                .collect(Collectors.joining(", "));
+                .toList();
     }
 
     public static <E extends Enum<E> & SortableField> SortWhitelist<E> of(Class<E> fieldType) {
@@ -52,7 +52,9 @@ public final class SortWhitelist<E extends Enum<E> & SortableField> {
         E field = byApiName.get(order.getProperty().toLowerCase(Locale.ROOT));
 
         if (field == null) {
-            throw new ApplicationException(CommonErrorCode.INVALID_SORT_PROPERTY, order.getProperty(), allowedApiNames)
+            throw new ApplicationException(CommonErrorCode.INVALID_SORT_PROPERTY)
+                    .param("property", order.getProperty())
+                    .param("allowed", allowedApiNames)
                     .with("sortProperty", order.getProperty());
         }
 

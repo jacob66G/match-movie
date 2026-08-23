@@ -9,11 +9,9 @@ public interface ErrorCode {
 
     HttpStatus status();
 
-    String messageKey();
+    String code();
 
-    default String code() {
-        return toString();
-    }
+    String detail();
 
     default Level logLevel() {
         return LogPolicy.levelFor(status());
