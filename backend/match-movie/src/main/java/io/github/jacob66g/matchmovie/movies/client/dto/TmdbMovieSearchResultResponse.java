@@ -18,6 +18,6 @@ public record TmdbMovieSearchResultResponse(
         Double popularity,
         BigDecimal voteAverage,
         Integer voteCount,
-        List<Integer> genreIds
+        List<Long> genreIds
 ) {
 }

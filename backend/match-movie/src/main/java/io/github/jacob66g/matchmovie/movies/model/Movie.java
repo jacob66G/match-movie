@@ -2,6 +2,7 @@ package io.github.jacob66g.matchmovie.movies.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.domain.Persistable;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -16,7 +17,7 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "movies")
-public class Movie {
+public class Movie implements Persistable<Long> {
 
     @Id
     @Column(name = "id")
@@ -98,4 +99,34 @@ public class Movie {
             joinColumns = @JoinColumn(name = "movie_id"),
             inverseJoinColumns = @JoinColumn(name = "genre_id"))
     private Set<Genre> genres = new LinkedHashSet<>();
+
+    public void markSynced() {
+        this.syncedAt = Instant.now();
+    }
+
+    @Builder.Default
+    @Transient
+    private boolean isNew = true;
+
+    @Override
+    public boolean isNew() {
+        return isNew;
+    }
+
+    @PrePersist
+    void onPersist() {
+        if (syncedAt == null) {
+            syncedAt = Instant.now();
+        }
+        if (genres == null) {
+            genres = new LinkedHashSet<>();
+        }
+    }
+
+    @PostLoad
+    @PostPersist
+    void markNotNew() {
+        this.isNew = false;
+    }
+
 }

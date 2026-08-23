@@ -1,11 +1,9 @@
 package io.github.jacob66g.matchmovie.movies.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.domain.Persistable;
 
 import java.util.Objects;
 
@@ -13,7 +11,7 @@ import java.util.Objects;
 @Getter
 @NoArgsConstructor
 @Table(name = "genres")
-public class Genre {
+public class Genre implements Persistable<Long> {
 
     @Id
     @Column(name = "id")
@@ -27,6 +25,14 @@ public class Genre {
         this.name = name;
     }
 
+    @Transient
+    private boolean isNew = true;
+
+    @Override
+    public boolean isNew() {
+        return isNew;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -37,5 +43,11 @@ public class Genre {
     @Override
     public int hashCode() {
         return Objects.hashCode(id);
+    }
+
+    @PostLoad
+    @PostPersist
+    void markNotNew() {
+        this.isNew = false;
     }
 }

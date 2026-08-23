@@ -36,7 +36,7 @@ public class TmdbClient {
     @CircuitBreaker(name = CIRCUIT_BREAKER, fallbackMethod = "getMovieDetailsFallback")
     @RateLimiter(name = CIRCUIT_BREAKER)
     public TmdbMovieDetailsResponse getMovieDetails(long movieId) {
-        return tmdbRestClient.get()
+        return requireBody(tmdbRestClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/movie/{movieId}")
                         .queryParam("language", tmdbProperties.language())
@@ -47,7 +47,7 @@ public class TmdbClient {
                     throw new ApplicationException(MovieErrorCode.TMDB_MOVIE_NOT_FOUND)
                             .with("movieId", movieId);
                 })
-                .body(TmdbMovieDetailsResponse.class);
+                .body(TmdbMovieDetailsResponse.class));
     }
 
     @Cacheable(
@@ -57,7 +57,7 @@ public class TmdbClient {
     @CircuitBreaker(name = CIRCUIT_BREAKER, fallbackMethod = "searchMoviesFallback")
     @RateLimiter(name = CIRCUIT_BREAKER)
     public TmdbSearchResponse searchMovies(String query, int page) {
-        return tmdbRestClient.get()
+        return requireBody(tmdbRestClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/search/movie")
                         .queryParam("query", query)
@@ -66,20 +66,28 @@ public class TmdbClient {
                         .queryParam("language", tmdbProperties.language())
                         .build())
                 .retrieve()
-                .body(TmdbSearchResponse.class);
+                .body(TmdbSearchResponse.class));
     }
 
     @Cacheable(cacheNames = CacheConfig.TMDB_GENRES_CACHE, key = "#root.target.language()")
     @CircuitBreaker(name = CIRCUIT_BREAKER, fallbackMethod = "listGenresFallback")
     @RateLimiter(name = CIRCUIT_BREAKER)
     public TmdbGenreListResponse listGenres() {
-        return tmdbRestClient.get()
+        return requireBody(tmdbRestClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/genre/movie/list")
                         .queryParam("language", tmdbProperties.language())
                         .build())
                 .retrieve()
-                .body(TmdbGenreListResponse.class);
+                .body(TmdbGenreListResponse.class));
+    }
+
+    private static <T> T requireBody(T body) {
+        if (body == null) {
+            throw new ApplicationException(MovieErrorCode.TMDB_INVALID_RESPONSE)
+                    .with("reason", "null body");
+        }
+        return body;
     }
 
     @SuppressWarnings("unused")

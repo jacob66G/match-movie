@@ -2,9 +2,7 @@ package io.github.jacob66g.matchmovie.watchlist.service;
 
 import io.github.jacob66g.matchmovie.common.dto.PageResponse;
 import io.github.jacob66g.matchmovie.common.exception.ApplicationException;
-import io.github.jacob66g.matchmovie.movies.exception.MovieErrorCode;
 import io.github.jacob66g.matchmovie.movies.model.Movie;
-import io.github.jacob66g.matchmovie.movies.repository.MovieRepository;
 import io.github.jacob66g.matchmovie.watchlist.dto.AddToWatchedRequest;
 import io.github.jacob66g.matchmovie.watchlist.dto.UpdateWatchedMovieRequest;
 import io.github.jacob66g.matchmovie.watchlist.dto.WatchedMovieResponse;
@@ -24,7 +22,6 @@ import java.util.UUID;
 public class WatchedMovieService {
 
     private final WatchedMovieRepository watchedMovieRepository;
-    private final MovieRepository movieRepository;
 
     @Transactional(readOnly = true)
     public WatchedMovieResponse getWatchedMovie(UUID userId, Long movieId) {
@@ -37,16 +34,13 @@ public class WatchedMovieService {
     }
 
     @Transactional
-    public WatchedMovieResponse addToWatched(UUID userId, AddToWatchedRequest addToWatched) {
-        UserMovieId id = new UserMovieId(userId, addToWatched.movieId());
+    public WatchedMovieResponse addToWatched(UUID userId, Movie movie, AddToWatchedRequest addToWatched) {
+        UserMovieId id = new UserMovieId(userId, movie.getId());
 
         if (watchedMovieRepository.existsById(id)) {
             throw new ApplicationException(WatchedMovieErrorCode.ALREADY_IN_WATCHED_MOVIES)
-                    .with("movieId", addToWatched.movieId());
+                    .with("movieId", movie.getId());
         }
-
-        //TODO after implementing TMDB integration import the movie when it is missing from the catalogue
-        Movie movie = findMovieOrThrow(addToWatched.movieId());
 
         WatchedMovie saved = watchedMovieRepository.save(
                 new WatchedMovie(userId, movie, addToWatched.rating(), addToWatched.review())
@@ -85,11 +79,5 @@ public class WatchedMovieService {
         return watchedMovieRepository.findWithMovieById(id)
                 .orElseThrow(() -> new ApplicationException(WatchedMovieErrorCode.WATCHED_MOVIE_NOT_FOUND)
                         .with("movieId", id.getMovieId()));
-    }
-
-    private Movie findMovieOrThrow(Long movieId) {
-        return movieRepository.findById(movieId)
-                .orElseThrow(() -> new ApplicationException(MovieErrorCode.MOVIE_NOT_FOUND)
-                        .with("movieId", movieId));
     }
 }

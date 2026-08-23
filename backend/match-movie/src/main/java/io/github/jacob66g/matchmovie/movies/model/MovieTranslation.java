@@ -1,23 +1,17 @@
 package io.github.jacob66g.matchmovie.movies.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.EmbeddedId;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.MapsId;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.domain.Persistable;
 
 
 @Entity
 @Getter
 @NoArgsConstructor
 @Table(name = "movie_translations")
-public class MovieTranslation {
+public class MovieTranslation implements Persistable<MovieTranslationId> {
 
     @EmbeddedId
     private MovieTranslationId id;
@@ -45,5 +39,19 @@ public class MovieTranslation {
         this.title = title;
         this.overview = overview;
         this.tagline = tagline;
+    }
+
+    @Transient
+    private boolean isNew = true;
+
+    @Override
+    public boolean isNew() {
+        return isNew;
+    }
+
+    @PostLoad
+    @PostPersist
+    void markNotNew() {
+        this.isNew = false;
     }
 }

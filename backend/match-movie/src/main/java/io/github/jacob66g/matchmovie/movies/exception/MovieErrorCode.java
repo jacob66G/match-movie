@@ -8,7 +8,8 @@ import org.springframework.http.HttpStatus;
 public enum MovieErrorCode implements ErrorCode {
     MOVIE_NOT_FOUND(HttpStatus.NOT_FOUND, "error.movie.not.found"),
     TMDB_MOVIE_NOT_FOUND(HttpStatus.NOT_FOUND, "error.tmdb.movie.not.found"),
-    TMDB_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "error.tmdb.unavailable");
+    TMDB_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "error.tmdb.unavailable"),
+    TMDB_INVALID_RESPONSE(HttpStatus.BAD_GATEWAY, "error.tmdb.invalid.response");
 
     private final HttpStatus status;
     private final String messageKey;

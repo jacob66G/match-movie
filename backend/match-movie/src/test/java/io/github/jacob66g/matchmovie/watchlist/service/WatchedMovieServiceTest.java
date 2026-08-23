@@ -1,11 +1,9 @@
-package io.github.jacob66g.matchmovie.watchlist;
+package io.github.jacob66g.matchmovie.watchlist.service;
 
 import io.github.jacob66g.matchmovie.common.dto.PageResponse;
 import io.github.jacob66g.matchmovie.common.exception.ApplicationException;
-import io.github.jacob66g.matchmovie.movies.exception.MovieErrorCode;
 import io.github.jacob66g.matchmovie.movies.model.Movie;
 import io.github.jacob66g.matchmovie.movies.model.MovieOrigin;
-import io.github.jacob66g.matchmovie.movies.repository.MovieRepository;
 import io.github.jacob66g.matchmovie.watchlist.dto.AddToWatchedRequest;
 import io.github.jacob66g.matchmovie.watchlist.dto.UpdateWatchedMovieRequest;
 import io.github.jacob66g.matchmovie.watchlist.dto.WatchedMovieResponse;
@@ -13,7 +11,6 @@ import io.github.jacob66g.matchmovie.watchlist.exception.WatchedMovieErrorCode;
 import io.github.jacob66g.matchmovie.watchlist.model.UserMovieId;
 import io.github.jacob66g.matchmovie.watchlist.model.WatchedMovie;
 import io.github.jacob66g.matchmovie.watchlist.repository.WatchedMovieRepository;
-import io.github.jacob66g.matchmovie.watchlist.service.WatchedMovieService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -34,10 +31,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class WatchedMovieServiceTest {
@@ -51,11 +45,23 @@ class WatchedMovieServiceTest {
     @Mock
     private WatchedMovieRepository watchedMovieRepository;
 
-    @Mock
-    private MovieRepository movieRepository;
-
     @InjectMocks
     private WatchedMovieService watchedMovieService;
+
+    @Test
+    void should_return_watched_movie() {
+        //given
+        UserMovieId userMovieId = new UserMovieId(TEST_USER_ID, TEST_MOVIE_ID);
+        when(watchedMovieRepository.findWithMovieById(userMovieId))
+                .thenReturn(Optional.of(watchedMovie()));
+
+        //when
+        WatchedMovieResponse result = watchedMovieService.getWatchedMovie(TEST_USER_ID, TEST_MOVIE_ID);
+
+        //then
+        assertThat(result.movie().id()).isEqualTo(TEST_MOVIE_ID);
+        assertThat(result.movie().title()).isEqualTo(TEST_TITLE);
+    }
 
     @Test
     void should_return_a_page_of_watched_movies_of_the_given_user() {
@@ -93,12 +99,11 @@ class WatchedMovieServiceTest {
     void should_save_movie_when_it_is_not_among_watched_movies() {
         //given
         when(watchedMovieRepository.existsById(userMovieId())).thenReturn(false);
-        when(movieRepository.findById(TEST_MOVIE_ID)).thenReturn(Optional.of(movie()));
         when(watchedMovieRepository.save(any(WatchedMovie.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         //when
-        WatchedMovieResponse response = watchedMovieService.addToWatched(
-                TEST_USER_ID, new AddToWatchedRequest(TEST_MOVIE_ID, TEST_RATING, TEST_REVIEW));
+        watchedMovieService.addToWatched(
+                TEST_USER_ID, movie(), new AddToWatchedRequest(TEST_MOVIE_ID, TEST_RATING, TEST_REVIEW));
 
         //then
         ArgumentCaptor<WatchedMovie> captor = ArgumentCaptor.forClass(WatchedMovie.class);
@@ -108,35 +113,21 @@ class WatchedMovieServiceTest {
         assertThat(saved.getId()).isEqualTo(userMovieId());
         assertThat(saved.getMovie().getId()).isEqualTo(TEST_MOVIE_ID);
         assertThat(saved.getRating()).isEqualTo(TEST_RATING);
-        assertThat(response.review()).isEqualTo(TEST_REVIEW);
     }
 
     @Test
     void should_throw_ApplicationException_when_movie_is_already_among_watched_movies() {
         //given
+        Movie movie = movie();
+        AddToWatchedRequest addToWatchedRequest = new AddToWatchedRequest(TEST_MOVIE_ID, TEST_RATING, TEST_REVIEW);
         when(watchedMovieRepository.existsById(userMovieId())).thenReturn(true);
 
         //when + then
         assertThatThrownBy(() -> watchedMovieService.addToWatched(
-                TEST_USER_ID, new AddToWatchedRequest(TEST_MOVIE_ID, TEST_RATING, TEST_REVIEW)))
+                TEST_USER_ID, movie, addToWatchedRequest))
                 .isInstanceOf(ApplicationException.class)
                 .extracting("errorCode")
                 .isEqualTo(WatchedMovieErrorCode.ALREADY_IN_WATCHED_MOVIES);
-        verify(watchedMovieRepository, never()).save(any());
-    }
-
-    @Test
-    void should_throw_ApplicationException_when_movie_is_missing_from_the_catalogue() {
-        //given
-        when(watchedMovieRepository.existsById(userMovieId())).thenReturn(false);
-        when(movieRepository.findById(TEST_MOVIE_ID)).thenReturn(Optional.empty());
-
-        //when + then
-        assertThatThrownBy(() -> watchedMovieService.addToWatched(
-                TEST_USER_ID, new AddToWatchedRequest(TEST_MOVIE_ID, TEST_RATING, TEST_REVIEW)))
-                .isInstanceOf(ApplicationException.class)
-                .extracting("errorCode")
-                .isEqualTo(MovieErrorCode.MOVIE_NOT_FOUND);
         verify(watchedMovieRepository, never()).save(any());
     }
 

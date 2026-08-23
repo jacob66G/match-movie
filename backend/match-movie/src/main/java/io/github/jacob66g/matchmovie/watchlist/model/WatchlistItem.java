@@ -4,6 +4,7 @@ import io.github.jacob66g.matchmovie.movies.model.Movie;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.domain.Persistable;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -12,7 +13,7 @@ import java.util.UUID;
 @Getter
 @NoArgsConstructor
 @Table(name = "watchlist")
-public class WatchlistItem {
+public class WatchlistItem implements Persistable<UserMovieId> {
 
     @EmbeddedId
     private UserMovieId id;
@@ -30,8 +31,22 @@ public class WatchlistItem {
         this.movie = movie;
     }
 
+    @Transient
+    private boolean isNew = true;
+
+    @Override
+    public boolean isNew() {
+        return isNew;
+    }
+
     @PrePersist
     public void onCreate() {
         this.addedAt = Instant.now();
+    }
+
+    @PostLoad
+    @PostPersist
+    void markNotNew() {
+        this.isNew = false;
     }
 }

@@ -1,18 +1,14 @@
-package io.github.jacob66g.matchmovie.watchlist;
+package io.github.jacob66g.matchmovie.watchlist.service;
 
 import io.github.jacob66g.matchmovie.common.dto.PageResponse;
 import io.github.jacob66g.matchmovie.common.exception.ApplicationException;
-import io.github.jacob66g.matchmovie.movies.exception.MovieErrorCode;
 import io.github.jacob66g.matchmovie.movies.model.Movie;
 import io.github.jacob66g.matchmovie.movies.model.MovieOrigin;
-import io.github.jacob66g.matchmovie.movies.repository.MovieRepository;
-import io.github.jacob66g.matchmovie.watchlist.dto.AddToWatchlistRequest;
 import io.github.jacob66g.matchmovie.watchlist.dto.WatchlistItemResponse;
 import io.github.jacob66g.matchmovie.watchlist.exception.WatchlistErrorCode;
 import io.github.jacob66g.matchmovie.watchlist.model.UserMovieId;
 import io.github.jacob66g.matchmovie.watchlist.model.WatchlistItem;
 import io.github.jacob66g.matchmovie.watchlist.repository.WatchlistRepository;
-import io.github.jacob66g.matchmovie.watchlist.service.WatchlistService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -27,16 +23,12 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class WatchlistServiceTest {
@@ -47,9 +39,6 @@ class WatchlistServiceTest {
 
     @Mock
     private WatchlistRepository watchlistRepository;
-
-    @Mock
-    private MovieRepository movieRepository;
 
     @InjectMocks
     private WatchlistService watchlistService;
@@ -82,11 +71,10 @@ class WatchlistServiceTest {
         //given
         UserMovieId id = new UserMovieId(TEST_USER_ID, TEST_MOVIE_ID);
         when(watchlistRepository.existsById(id)).thenReturn(false);
-        when(movieRepository.findById(TEST_MOVIE_ID)).thenReturn(Optional.of(movie()));
         when(watchlistRepository.save(any(WatchlistItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         //when
-        WatchlistItemResponse response = watchlistService.addToWatchlist(TEST_USER_ID, new AddToWatchlistRequest(TEST_MOVIE_ID));
+        WatchlistItemResponse response = watchlistService.addToWatchlist(TEST_USER_ID, movie());
 
         //then
         ArgumentCaptor<WatchlistItem> itemCaptor = ArgumentCaptor.forClass(WatchlistItem.class);
@@ -101,27 +89,14 @@ class WatchlistServiceTest {
     @Test
     void should_throw_ApplicationException_when_movie_is_already_on_the_watchlist() {
         //given
+        Movie movie = movie();
         when(watchlistRepository.existsById(new UserMovieId(TEST_USER_ID, TEST_MOVIE_ID))).thenReturn(true);
 
         //when + then
-        assertThatThrownBy(() -> watchlistService.addToWatchlist(TEST_USER_ID, new AddToWatchlistRequest(TEST_MOVIE_ID)))
+        assertThatThrownBy(() -> watchlistService.addToWatchlist(TEST_USER_ID, movie))
                 .isInstanceOf(ApplicationException.class)
                 .extracting("errorCode")
                 .isEqualTo(WatchlistErrorCode.ALREADY_IN_WATCHLIST);
-        verify(watchlistRepository, never()).save(any());
-    }
-
-    @Test
-    void should_throw_ApplicationException_when_movie_is_missing_from_the_catalogue() {
-        //given
-        when(watchlistRepository.existsById(new UserMovieId(TEST_USER_ID, TEST_MOVIE_ID))).thenReturn(false);
-        when(movieRepository.findById(TEST_MOVIE_ID)).thenReturn(Optional.empty());
-
-        //when + then
-        assertThatThrownBy(() -> watchlistService.addToWatchlist(TEST_USER_ID, new AddToWatchlistRequest(TEST_MOVIE_ID)))
-                .isInstanceOf(ApplicationException.class)
-                .extracting("errorCode")
-                .isEqualTo(MovieErrorCode.MOVIE_NOT_FOUND);
         verify(watchlistRepository, never()).save(any());
     }
 

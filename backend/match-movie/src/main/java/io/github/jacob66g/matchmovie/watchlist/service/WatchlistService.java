@@ -2,10 +2,7 @@ package io.github.jacob66g.matchmovie.watchlist.service;
 
 import io.github.jacob66g.matchmovie.common.dto.PageResponse;
 import io.github.jacob66g.matchmovie.common.exception.ApplicationException;
-import io.github.jacob66g.matchmovie.movies.exception.MovieErrorCode;
 import io.github.jacob66g.matchmovie.movies.model.Movie;
-import io.github.jacob66g.matchmovie.movies.repository.MovieRepository;
-import io.github.jacob66g.matchmovie.watchlist.dto.AddToWatchlistRequest;
 import io.github.jacob66g.matchmovie.watchlist.dto.WatchlistItemResponse;
 import io.github.jacob66g.matchmovie.watchlist.exception.WatchlistErrorCode;
 import io.github.jacob66g.matchmovie.watchlist.model.UserMovieId;
@@ -23,7 +20,6 @@ import java.util.UUID;
 public class WatchlistService {
 
     private final WatchlistRepository watchlistRepository;
-    private final MovieRepository movieRepository;
 
     @Transactional(readOnly = true)
     public PageResponse<WatchlistItemResponse> getWatchlist(UUID userId, Pageable pageable) {
@@ -31,16 +27,13 @@ public class WatchlistService {
     }
 
     @Transactional
-    public WatchlistItemResponse addToWatchlist(UUID userId, AddToWatchlistRequest addToWatchlist) {
-        UserMovieId id = new UserMovieId(userId, addToWatchlist.movieId());
+    public WatchlistItemResponse addToWatchlist(UUID userId, Movie movie) {
+        UserMovieId id = new UserMovieId(userId, movie.getId());
 
         if (watchlistRepository.existsById(id)) {
             throw new ApplicationException(WatchlistErrorCode.ALREADY_IN_WATCHLIST)
-                    .with("movieId", addToWatchlist.movieId());
+                    .with("movieId", movie.getId());
         }
-
-        //TODO after implementing TMDB integration import the movie when it is missing from the catalogue
-        Movie movie = findMovieOrThrow(addToWatchlist.movieId());
 
         WatchlistItem saved = watchlistRepository.save(new WatchlistItem(userId, movie));
         return WatchlistItemResponse.from(saved);
@@ -58,9 +51,4 @@ public class WatchlistService {
         watchlistRepository.deleteById(id);
     }
 
-    private Movie findMovieOrThrow(Long movieId) {
-        return movieRepository.findById(movieId)
-                .orElseThrow(() -> new ApplicationException(MovieErrorCode.MOVIE_NOT_FOUND)
-                        .with("movieId", movieId));
-    }
 }
