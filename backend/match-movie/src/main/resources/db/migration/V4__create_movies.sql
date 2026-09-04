@@ -20,7 +20,7 @@ CREATE TABLE movies (
     collection_id BIGINT,
     collection_name TEXT,
     origin VARCHAR(20) NOT NULL,
-    synced_at TIMESTAMPTZ NOT NULL
+    synced_at TIMESTAMPTZ NOT NULL,
 
     CONSTRAINT movies_runtime_positive CHECK (runtime IS NULL OR runtime > 0),
     CONSTRAINT movies_vote_average_range CHECK (vote_average IS NULL OR vote_average BETWEEN 0 AND 10),

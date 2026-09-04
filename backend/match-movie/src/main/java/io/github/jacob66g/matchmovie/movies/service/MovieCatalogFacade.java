@@ -39,7 +39,7 @@ public class MovieCatalogFacade {
     }
 
     private Movie importFromTmdb(Long tmdbMovieId) {
-        TmdbMovieDetailsResponse details = tmdbClient.getMovieDetails(tmdbMovieId);
+        TmdbMovieDetailsResponse details = tmdbClient.getMovieDetails(tmdbMovieId, true);
 
         try {
             return movieCatalogService.persistImported(details, MovieOrigin.ON_DEMAND);

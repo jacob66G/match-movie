@@ -48,14 +48,14 @@ class MovieCatalogFacadeTest {
         //then
         assertThat(result).isSameAs(movie);
         verify(movieCatalogService, times(1)).findById(MOVIE_ID);
-        verify(tmdbClient, never()).getMovieDetails(anyLong());
+        verify(tmdbClient, never()).getMovieDetails(anyLong(), anyBoolean());
     }
 
     @Test
     void should_import_tmdb_movie_if_no_exists_in_catalog() {
         //given
         when(movieCatalogService.findById(MOVIE_ID)).thenReturn(Optional.empty());
-        when(tmdbClient.getMovieDetails(MOVIE_ID)).thenReturn(tmdbMovieDetailsResponse);
+        when(tmdbClient.getMovieDetails(MOVIE_ID, true)).thenReturn(tmdbMovieDetailsResponse);
         when(movieCatalogService.persistImported(tmdbMovieDetailsResponse, MovieOrigin.ON_DEMAND)).thenReturn(movie);
 
         //when
@@ -63,7 +63,7 @@ class MovieCatalogFacadeTest {
 
         //then
         assertThat(result).isSameAs(movie);
-        verify(tmdbClient, times(1)).getMovieDetails(MOVIE_ID);
+        verify(tmdbClient, times(1)).getMovieDetails(MOVIE_ID, true);
         verify(movieCatalogService, times(1)).persistImported(tmdbMovieDetailsResponse, MovieOrigin.ON_DEMAND);
     }
 
@@ -71,7 +71,7 @@ class MovieCatalogFacadeTest {
     void should_throw_ApplicationException_when_integrity_violation_exception_and_no_found_movie() {
         //given
         when(movieCatalogService.findById(MOVIE_ID)).thenReturn(Optional.empty());
-        when(tmdbClient.getMovieDetails(MOVIE_ID)).thenReturn(tmdbMovieDetailsResponse);
+        when(tmdbClient.getMovieDetails(MOVIE_ID, true)).thenReturn(tmdbMovieDetailsResponse);
         when(movieCatalogService.persistImported(tmdbMovieDetailsResponse, MovieOrigin.ON_DEMAND)).thenThrow(DataIntegrityViolationException.class);
 
         //when + then
@@ -85,7 +85,7 @@ class MovieCatalogFacadeTest {
     void should_return_movie_when_integrity_violation_exception_and_found_movie() {
         //given
         when(movieCatalogService.findById(MOVIE_ID)).thenReturn(Optional.empty()).thenReturn(Optional.of(movie));
-        when(tmdbClient.getMovieDetails(MOVIE_ID)).thenReturn(tmdbMovieDetailsResponse);
+        when(tmdbClient.getMovieDetails(MOVIE_ID, true)).thenReturn(tmdbMovieDetailsResponse);
         when(movieCatalogService.persistImported(tmdbMovieDetailsResponse, MovieOrigin.ON_DEMAND)).thenThrow(DataIntegrityViolationException.class);
 
         //when

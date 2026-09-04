@@ -40,7 +40,7 @@ public class MovieFactory {
 
     public static final int TMDB_PAGE_SIZE = 20;
 
-    public static final TmdbMovieDetailsResponse tmdbMovieDetailsResponse = tmdbMovieDetailsResponse();
+    public static final TmdbMovieDetailsResponse tmdbMovieDetailsResponse = tmdbMovieDetailsResponse(MOVIE_ID);
     public static final TmdbMovieSearchResultResponse tmdbMovieSearchResultResponse = tmdbSearchResult(MOVIE_ID, TITLE);
     public static final TmdbSearchResponse tmdbSearchResponse = tmdbSearchResponse(
             1, 10, 200, List.of(tmdbMovieSearchResultResponse)
@@ -51,9 +51,13 @@ public class MovieFactory {
     public static final List<MovieTranslation> movieTranslations = movieTranslations(movie);
 
 
-    private static TmdbMovieDetailsResponse tmdbMovieDetailsResponse() {
+    public static TmdbMovieDetailsResponse tmdbMovieDetailsResponse(Long movieId) {
+        return tmdbMovieDetailsResponse(movieId, OVERVIEW, STATUS);
+    }
+
+    public static TmdbMovieDetailsResponse tmdbMovieDetailsResponse(Long movieId, String overview, String status) {
         return new TmdbMovieDetailsResponse(
-                MOVIE_ID,
+                movieId,
                 false,
                 false,
                 BACKDROP_PATH,
@@ -61,9 +65,9 @@ public class MovieFactory {
                 TITLE,
                 ORIGINAL_TITLE,
                 ORIGINAL_LANGUAGE,
-                OVERVIEW,
+                overview,
                 TAGLINE,
-                STATUS,
+                status,
                 IMDB_ID,
                 RELEASE_DATE,
                 RUNTIME,

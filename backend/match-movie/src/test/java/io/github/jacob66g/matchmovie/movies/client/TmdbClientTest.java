@@ -6,10 +6,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.jacob66g.matchmovie.common.exception.ApplicationException;
-import io.github.jacob66g.matchmovie.movies.client.dto.TmdbGenreListResponse;
-import io.github.jacob66g.matchmovie.movies.client.dto.TmdbGenreResponse;
-import io.github.jacob66g.matchmovie.movies.client.dto.TmdbMovieDetailsResponse;
-import io.github.jacob66g.matchmovie.movies.client.dto.TmdbSearchResponse;
+import io.github.jacob66g.matchmovie.movies.client.dto.*;
 import io.github.jacob66g.matchmovie.movies.client.jackson.EmptyStringAsNullLocalDateDeserializer;
 import io.github.jacob66g.matchmovie.movies.exception.MovieErrorCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,9 +23,7 @@ import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
@@ -120,7 +115,7 @@ class TmdbClientTest {
                         }
                         """, MediaType.APPLICATION_JSON));
 
-        TmdbMovieDetailsResponse details = tmdbClient.getMovieDetails(11);
+        TmdbMovieDetailsResponse details = tmdbClient.getMovieDetails(11, false);
 
         assertThat(details.id()).isEqualTo(11L);
         assertThat(details.title()).isEqualTo("Star Wars");
@@ -154,7 +149,7 @@ class TmdbClientTest {
                         }
                         """, MediaType.APPLICATION_JSON));
 
-        TmdbMovieDetailsResponse details = tmdbClient.getMovieDetails(1);
+        TmdbMovieDetailsResponse details = tmdbClient.getMovieDetails(1, false);
 
         assertThat(details.releaseDate()).isNull();
         server.verify();
@@ -166,7 +161,7 @@ class TmdbClientTest {
                 .andExpect(method(HttpMethod.GET))
                 .andRespond(withStatus(HttpStatus.NOT_FOUND));
 
-        assertThatThrownBy(() -> tmdbClient.getMovieDetails(999))
+        assertThatThrownBy(() -> tmdbClient.getMovieDetails(999, false))
                 .isInstanceOf(ApplicationException.class)
                 .extracting("errorCode")
                 .isEqualTo(MovieErrorCode.TMDB_MOVIE_NOT_FOUND);
@@ -245,8 +240,103 @@ class TmdbClientTest {
 
         TmdbGenreListResponse response = tmdbClient.listGenres();
 
-        assertThat(response.genres()).extracting(genre -> genre.name())
+        assertThat(response.genres()).extracting(TmdbGenreResponse::name)
                 .containsExactly("Action", "Adventure");
+        server.verify();
+    }
+
+    @Test
+    void should_discover_movies_and_map_parameters_correctly() {
+        TmdbDiscoverQuery query = new TmdbDiscoverQuery(
+                LocalDate.of(2022, 12, 1),
+                LocalDate.of(2023, 12, 1),
+                1000,
+                TmdbSortField.VOTE_AVERAGE_DESC
+        );
+
+        String expectedUrl = BASE_URL + "/discover/movie" +
+                "?primary_release_date.gte=2022-12-01" +
+                "&primary_release_date.lte=2023-12-01" +
+                "&vote_count.gte=1000" +
+                "&sort_by=vote_average.desc" +
+                "&page=1" +
+                "&include_adult=false" +
+                "&language=en-US";
+
+        server.expect(requestTo(expectedUrl))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("""
+                        {
+                             "page": 1,
+                             "results": [
+                               {
+                                 "adult": false,
+                                 "backdrop_path": "/kJsPVzdyBrYHLomuNv5SJDXUQ2f.jpg",
+                                 "genre_ids": [
+                                   28,
+                                   12,
+                                   878
+                                 ],
+                                 "id": 76600,
+                                 "title": "Avatar: The Way of Water",
+                                 "original_language": "en",
+                                 "original_title": "Avatar: The Way of Water",
+                                 "overview": "Set more than a decade after the events of the first film, learn the story of the Sully family (Jake, Neytiri, and their kids), the trouble that follows them, the lengths they go to keep each other safe, the battles they fight to stay alive, and the tragedies they endure.",
+                                 "popularity": 39.193,
+                                 "poster_path": "/t6HIqrRAclMCA60NsSmeqe9RmNV.jpg",
+                                 "release_date": "2022-12-14",
+                                 "softcore": false,
+                                 "video": false,
+                                 "vote_average": 7.588,
+                                 "vote_count": 14544
+                               },
+                               {
+                                 "adult": false,
+                                 "backdrop_path": "/neeNHeXjMF5fXoCJRsOmkNGC7q.jpg",
+                                 "genre_ids": [
+                                   18,
+                                   36
+                                 ],
+                                 "id": 872585,
+                                 "title": "Oppenheimer",
+                                 "original_language": "en",
+                                 "original_title": "Oppenheimer",
+                                 "overview": "The story of J. Robert Oppenheimer's role in the development of the atomic bomb during World War II.",
+                                 "popularity": 44.0394,
+                                 "poster_path": "/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
+                                 "release_date": "2023-07-19",
+                                 "softcore": false,
+                                 "video": false,
+                                 "vote_average": 8.022,
+                                 "vote_count": 12316
+                               }
+                            ],
+                           "total_pages": 6,
+                           "total_results": 114
+                         }
+                        """, MediaType.APPLICATION_JSON));
+
+        TmdbSearchResponse response = tmdbClient.discoverMovies(query, 1);
+
+
+        assertThat(response.totalPages()).isEqualTo(6);
+        assertThat(response.totalResults()).isEqualTo(114);
+        assertThat(response.results()).hasSize(2);
+
+        assertThat(response.results()).element(0).satisfies(result -> {
+            assertThat(result.id()).isEqualTo(76600L);
+            assertThat(result.title()).isEqualTo("Avatar: The Way of Water");
+            assertThat(result.genreIds()).containsExactly(28L, 12L, 878L);
+            assertThat(result.voteAverage()).isEqualByComparingTo(new BigDecimal("7.588"));
+        });
+
+        assertThat(response.results()).element(1).satisfies(result -> {
+            assertThat(result.id()).isEqualTo(872585);
+            assertThat(result.title()).isEqualTo("Oppenheimer");
+            assertThat(result.genreIds()).containsExactly(18L, 36L);
+            assertThat(result.voteAverage()).isEqualByComparingTo(new BigDecimal("8.022"));
+        });
+
         server.verify();
     }
 

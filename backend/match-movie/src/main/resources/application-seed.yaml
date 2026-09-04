@@ -1,0 +1,19 @@
+spring:
+  main:
+    web-application-type: none
+
+seed:
+  movies:
+    yearFrom: 1970
+    yearTo: 2026
+    minVoteCount: 50
+    pagesPerSlice: 10
+    maxAttempts: 3
+    progressLogEvery: 100
+    maxCandidates:
+    retryBackoff: 1s
+
+logging:
+  level:
+    org.hibernate.SQL: warn
+    org.springframework.security: warn

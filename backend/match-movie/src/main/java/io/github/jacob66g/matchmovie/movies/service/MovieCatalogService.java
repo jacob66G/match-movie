@@ -2,7 +2,10 @@ package io.github.jacob66g.matchmovie.movies.service;
 
 import io.github.jacob66g.matchmovie.movies.client.dto.TmdbMovieDetailsResponse;
 import io.github.jacob66g.matchmovie.movies.client.mapper.TmdbCatalogMapper;
-import io.github.jacob66g.matchmovie.movies.model.*;
+import io.github.jacob66g.matchmovie.movies.model.Genre;
+import io.github.jacob66g.matchmovie.movies.model.Movie;
+import io.github.jacob66g.matchmovie.movies.model.MovieOrigin;
+import io.github.jacob66g.matchmovie.movies.model.MovieTranslation;
 import io.github.jacob66g.matchmovie.movies.repository.GenreRepository;
 import io.github.jacob66g.matchmovie.movies.repository.MovieRepository;
 import io.github.jacob66g.matchmovie.movies.repository.MovieTranslationRepository;
@@ -30,12 +33,6 @@ public class MovieCatalogService {
         return movieRepository.findById(tmdbMovieId);
     }
 
-    @Transactional
-    public Movie persistImported(TmdbMovieDetailsResponse details, MovieOrigin origin) {
-        return movieRepository.findById(details.id())
-                .orElseGet(() -> insertNewMovie(details, origin));
-    }
-
     @Transactional(readOnly = true)
     public Set<Long> findCatalogIds(Set<Long> tmdbMovieIds) {
         if (tmdbMovieIds.isEmpty()) {
@@ -45,7 +42,8 @@ public class MovieCatalogService {
         return movieRepository.findExistingIds(tmdbMovieIds);
     }
 
-    private Movie insertNewMovie(TmdbMovieDetailsResponse details, MovieOrigin origin) {
+    @Transactional
+    public Movie persistImported(TmdbMovieDetailsResponse details, MovieOrigin origin) {
         Movie movie = tmdbCatalogMapper.toMovie(details, origin);
         movie.setGenres(resolveGenres(tmdbCatalogMapper.toGenres(details.genres())));
         movieRepository.save(movie);

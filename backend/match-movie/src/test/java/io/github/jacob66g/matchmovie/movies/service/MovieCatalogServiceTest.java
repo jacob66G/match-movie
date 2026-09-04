@@ -15,7 +15,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import static io.github.jacob66g.matchmovie.movies.MovieFactory.*;
@@ -41,27 +40,10 @@ class MovieCatalogServiceTest {
     private MovieCatalogService movieCatalogService;
 
     @Test
-    void should_return_movie_without_persist_when_already_exists() {
-        //given
-        when(movieRepository.findById(MOVIE_ID)).thenReturn(Optional.of(movie));
-
-        //when
-        Movie result = movieCatalogService.persistImported(tmdbMovieDetailsResponse, MovieOrigin.ON_DEMAND);
-
-        //then
-        assertThat(result).isNotNull();
-        assertThat(result.getId()).isEqualTo(MOVIE_ID);
-
-        verify(movieRepository, times(1)).findById(MOVIE_ID);
-        verify(movieRepository, never()).save(any(Movie.class));
-    }
-
-    @Test
     void should_persist_movie_and_translations_when_no_exists() {
         //given
         Set<Long> genreIds = Set.of(COMEDY_GENRE_ID, THRILLER_GENRE_ID, HORROR_GENRE_ID);
 
-        when(movieRepository.findById(MOVIE_ID)).thenReturn(Optional.empty());
         when(tmdbCatalogMapper.toMovie(tmdbMovieDetailsResponse, MovieOrigin.ON_DEMAND)).thenReturn(movie);
         when(tmdbCatalogMapper.toGenres(tmdbMovieDetailsResponse.genres())).thenReturn(genres);
         when(genreRepository.findAllById(genreIds)).thenReturn(genres);
@@ -87,7 +69,6 @@ class MovieCatalogServiceTest {
         Set<Long> genreIds = Set.of(COMEDY_GENRE_ID, THRILLER_GENRE_ID, HORROR_GENRE_ID);
         List<Genre> alreadyStored = List.of(new Genre(COMEDY_GENRE_ID, "Comedy"));
 
-        when(movieRepository.findById(MOVIE_ID)).thenReturn(Optional.empty());
         when(tmdbCatalogMapper.toMovie(tmdbMovieDetailsResponse, MovieOrigin.ON_DEMAND)).thenReturn(movie);
         when(tmdbCatalogMapper.toGenres(tmdbMovieDetailsResponse.genres())).thenReturn(genres);
         when(genreRepository.findAllById(genreIds)).thenReturn(alreadyStored).thenReturn(genres);

@@ -4,9 +4,9 @@ import io.github.jacob66g.matchmovie.security.exceptionhandling.CustomAccessDeni
 import io.github.jacob66g.matchmovie.security.exceptionhandling.CustomAuthenticationEntryPoint;
 import io.github.jacob66g.matchmovie.user.common.UserProvisioningFilter;
 import io.github.jacob66g.matchmovie.user.service.UserService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -27,7 +27,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
+@ConditionalOnWebApplication
 public class SecurityConfig {
 
     @Value("${spring.app.security.keycloak.client-id}")
@@ -36,10 +36,6 @@ public class SecurityConfig {
     @Value("${spring.app.security.cors.allowed-origins}")
     private List<String> allowedOrigins;
 
-    private final CustomAccessDeniedHandler customAccessDeniedHandler;
-
-    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, UserService userService, LocaleResolver localeResolver, @Qualifier("handlerExceptionResolver") HandlerExceptionResolver handlerExceptionResolver) throws Exception {
         JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
@@ -47,6 +43,10 @@ public class SecurityConfig {
 
         UserProvisioningFilter userProvisioningFilter =
                 new UserProvisioningFilter(userService, handlerExceptionResolver, localeResolver);
+        CustomAccessDeniedHandler customAccessDeniedHandler =
+                new CustomAccessDeniedHandler(handlerExceptionResolver);
+        CustomAuthenticationEntryPoint customAuthenticationEntryPoint =
+                new CustomAuthenticationEntryPoint(handlerExceptionResolver);
 
         http
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
