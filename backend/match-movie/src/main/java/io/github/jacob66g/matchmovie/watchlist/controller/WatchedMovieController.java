@@ -7,8 +7,9 @@ import io.github.jacob66g.matchmovie.watchlist.dto.AddToWatchedRequest;
 import io.github.jacob66g.matchmovie.watchlist.dto.UpdateWatchedMovieRequest;
 import io.github.jacob66g.matchmovie.watchlist.dto.WatchedMovieResponse;
 import io.github.jacob66g.matchmovie.watchlist.service.WatchedMovieFacade;
-import io.github.jacob66g.matchmovie.watchlist.sort.WatchedMovieSortField;
+import io.github.jacob66g.matchmovie.watchlist.dto.sort.WatchedMovieSortField;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -29,7 +30,8 @@ public class WatchedMovieController {
     private final WatchedMovieFacade watchedMovieFacade;
 
     @GetMapping("/{movieId}")
-    public ResponseEntity<WatchedMovieResponse> getWatchedMovie(@AuthenticatedUser UUID userId, @PathVariable Long movieId) {
+    public ResponseEntity<WatchedMovieResponse> getWatchedMovie(@AuthenticatedUser UUID userId,
+                                                                @PathVariable @Positive Long movieId) {
         return ResponseEntity.ok(watchedMovieFacade.getWatchedMovie(userId, movieId));
     }
 
@@ -50,13 +52,13 @@ public class WatchedMovieController {
 
     @PatchMapping("/{movieId}")
     public ResponseEntity<WatchedMovieResponse> updateWatchedMovie(@AuthenticatedUser UUID userId,
-                                                                   @PathVariable Long movieId,
+                                                                   @PathVariable @Positive Long movieId,
                                                                    @Valid @RequestBody UpdateWatchedMovieRequest updateWatchedMovie) {
         return ResponseEntity.ok(watchedMovieFacade.updateWatchedMovie(userId, movieId, updateWatchedMovie));
     }
 
     @DeleteMapping("/{movieId}")
-    public ResponseEntity<Void> removeFromWatched(@AuthenticatedUser UUID userId, @PathVariable Long movieId) {
+    public ResponseEntity<Void> removeFromWatched(@AuthenticatedUser UUID userId, @PathVariable @Positive Long movieId) {
         watchedMovieFacade.removeFromWatched(userId, movieId);
         return ResponseEntity.noContent().build();
     }

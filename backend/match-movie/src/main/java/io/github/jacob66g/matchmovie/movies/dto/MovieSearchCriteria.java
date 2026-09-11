@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 
 
-public record MovieSearchRequest(
+public record MovieSearchCriteria(
         @NotBlank
         String query,
         @Min(1)
@@ -15,7 +15,7 @@ public record MovieSearchRequest(
 
     private static final int FIRST_PAGE = 1;
 
-    public MovieSearchRequest {
+    public MovieSearchCriteria {
         page = page == null ? FIRST_PAGE : page;
     }
 }

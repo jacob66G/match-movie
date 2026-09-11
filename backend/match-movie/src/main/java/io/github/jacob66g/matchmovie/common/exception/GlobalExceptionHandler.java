@@ -7,6 +7,7 @@ import io.github.jacob66g.matchmovie.common.log.LogContext;
 import io.github.jacob66g.matchmovie.common.log.LogPolicy;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.MessageSourceResolvable;
 import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -14,17 +15,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.validation.FieldError;
+import org.springframework.validation.Errors;
+import org.springframework.validation.method.ParameterErrors;
+import org.springframework.validation.method.ParameterValidationResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.github.jacob66g.matchmovie.common.log.LogSanitizer.sanitize;
@@ -45,6 +46,14 @@ public class GlobalExceptionHandler {
         Map<String, List<String>> fieldErrors = formatFieldErrors(ex);
         return handle(ex, CommonErrorCode.VALIDATION_ERROR, NO_PARAMS,
                 Map.of("fields", fieldErrors), fieldErrors, request);
+    }
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ErrorResponse> handleHandlerMethodValidation(HandlerMethodValidationException ex, HttpServletRequest request) {
+        Map<String, List<String>> fieldErrors = formatMethodValidationErrors(ex);
+
+        return handle(ex, CommonErrorCode.VALIDATION_ERROR, NO_PARAMS,
+                Map.of("fields", fieldErrors), fieldErrors, ex.getHeaders(), request);
     }
 
     @ExceptionHandler(PropertyReferenceException.class)
@@ -137,14 +146,54 @@ public class GlobalExceptionHandler {
     }
 
     private Map<String, List<String>> formatFieldErrors(MethodArgumentNotValidException ex) {
-        return ex.getBindingResult().getFieldErrors().stream()
-                .collect(Collectors.groupingBy(
-                        FieldError::getField,
-                        LinkedHashMap::new,
-                        Collectors.mapping(
-                                fieldError -> Objects.requireNonNullElse(fieldError.getCode(), "Invalid"),
-                                Collectors.toList())
-                ));
+        Map<String, List<String>> fieldErrors = new LinkedHashMap<>();
+        addBindingErrors(fieldErrors, ex.getBindingResult());
+        return fieldErrors;
+    }
+
+    private Map<String, List<String>> formatMethodValidationErrors(HandlerMethodValidationException ex) {
+        Map<String, List<String>> fieldErrors = new LinkedHashMap<>();
+
+        for (ParameterValidationResult result : ex.getParameterValidationResults()) {
+            if (result instanceof ParameterErrors parameterErrors) {
+                addBindingErrors(fieldErrors, parameterErrors);
+            } else {
+                String parameterName = Objects.requireNonNullElse(result.getMethodParameter().getParameterName(), "parameter");
+
+                result.getResolvableErrors().forEach(error ->
+                        addValidationError(fieldErrors, parameterName, messageOf(error))
+                );
+            }
+        }
+
+        ex.getCrossParameterValidationResults().forEach(error ->
+                addValidationError(fieldErrors, "_global", messageOf(error))
+        );
+
+        return fieldErrors;
+    }
+
+    private void addBindingErrors(Map<String, List<String>> fieldErrors, Errors errors) {
+        errors.getFieldErrors().forEach(error ->
+                addValidationError(fieldErrors, error.getField(), messageOf(error))
+        );
+
+        errors.getGlobalErrors().forEach(error ->
+                addValidationError(fieldErrors, errors.getObjectName(), messageOf(error))
+        );
+    }
+
+    private void addValidationError(Map<String, List<String>> fieldErrors, String field, String message) {
+        fieldErrors
+                .computeIfAbsent(field, ignored -> new ArrayList<>())
+                .add(message);
+    }
+
+    private String messageOf(MessageSourceResolvable error) {
+        return Objects.requireNonNullElse(
+                error.getDefaultMessage(),
+                "Invalid value"
+        );
     }
 
     private String formatContext(Map<String, Object> context) {

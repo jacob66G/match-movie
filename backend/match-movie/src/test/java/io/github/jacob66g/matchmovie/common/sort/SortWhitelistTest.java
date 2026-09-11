@@ -2,7 +2,7 @@ package io.github.jacob66g.matchmovie.common.sort;
 
 import io.github.jacob66g.matchmovie.common.exception.ApplicationException;
 import io.github.jacob66g.matchmovie.common.exception.errorcode.CommonErrorCode;
-import io.github.jacob66g.matchmovie.watchlist.sort.WatchlistSortField;
+import io.github.jacob66g.matchmovie.watchlist.dto.sort.WatchlistSortField;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;

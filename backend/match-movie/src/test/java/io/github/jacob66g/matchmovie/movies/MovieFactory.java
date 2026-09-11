@@ -3,6 +3,7 @@ package io.github.jacob66g.matchmovie.movies;
 import io.github.jacob66g.matchmovie.common.dto.PageResponse;
 import io.github.jacob66g.matchmovie.movies.client.dto.*;
 import io.github.jacob66g.matchmovie.movies.dto.MovieSearchResponse;
+import io.github.jacob66g.matchmovie.movies.dto.MovieSummaryResponse;
 import io.github.jacob66g.matchmovie.movies.model.Genre;
 import io.github.jacob66g.matchmovie.movies.model.Movie;
 import io.github.jacob66g.matchmovie.movies.model.MovieOrigin;
@@ -49,6 +50,7 @@ public class MovieFactory {
     public static final Movie movie = movie();
     public static final List<Genre> genres = genres();
     public static final List<MovieTranslation> movieTranslations = movieTranslations(movie);
+    public static final MovieSummaryResponse movieSummaryResponse = movieSummaryResponse();
 
 
     public static TmdbMovieDetailsResponse tmdbMovieDetailsResponse(Long movieId) {
@@ -80,18 +82,7 @@ public class MovieFactory {
         );
     }
 
-    private static PageResponse<MovieSearchResponse> searchPage(TmdbSearchResponse searchResponse) {
-        return new PageResponse<>(
-                List.of(movieSearchResponse()),
-                searchResponse.page(),
-                TMDB_PAGE_SIZE,
-                searchResponse.totalResults(),
-                searchResponse.totalPages(),
-                searchResponse.page() >= searchResponse.totalPages()
-        );
-    }
-
-    private static MovieSearchResponse movieSearchResponse() {
+    public static MovieSearchResponse movieSearchResponse() {
         return new MovieSearchResponse(
                 MOVIE_ID,
                 TITLE,
@@ -132,6 +123,17 @@ public class MovieFactory {
         );
     }
 
+    private static PageResponse<MovieSearchResponse> searchPage(TmdbSearchResponse searchResponse) {
+        return new PageResponse<>(
+                List.of(movieSearchResponse()),
+                searchResponse.page(),
+                TMDB_PAGE_SIZE,
+                searchResponse.totalResults(),
+                searchResponse.totalPages(),
+                searchResponse.page() >= searchResponse.totalPages()
+        );
+    }
+
     private static List<TmdbGenreResponse> tmdbGenreResponseList() {
         return List.of(
                 new TmdbGenreResponse(COMEDY_GENRE_ID, "Comedy"),
@@ -169,6 +171,17 @@ public class MovieFactory {
                         )
                 )
         ));
+    }
+
+    private static MovieSummaryResponse movieSummaryResponse() {
+        return new MovieSummaryResponse(
+                MOVIE_ID,
+                TITLE,
+                POSTER_PATH,
+                RELEASE_DATE,
+                RUNTIME,
+                VOTE_AVERAGE
+        );
     }
 
     private static Movie movie() {

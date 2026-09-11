@@ -1,7 +1,10 @@
 package io.github.jacob66g.matchmovie.movies.service;
 
+import io.github.jacob66g.matchmovie.common.dto.PageResponse;
 import io.github.jacob66g.matchmovie.movies.client.dto.TmdbMovieDetailsResponse;
 import io.github.jacob66g.matchmovie.movies.client.mapper.TmdbCatalogMapper;
+import io.github.jacob66g.matchmovie.movies.dto.MovieDiscoverCriteria;
+import io.github.jacob66g.matchmovie.movies.dto.MovieSearchResponse;
 import io.github.jacob66g.matchmovie.movies.model.Genre;
 import io.github.jacob66g.matchmovie.movies.model.Movie;
 import io.github.jacob66g.matchmovie.movies.model.MovieOrigin;
@@ -11,11 +14,15 @@ import io.github.jacob66g.matchmovie.movies.repository.MovieRepository;
 import io.github.jacob66g.matchmovie.movies.repository.MovieTranslationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static io.github.jacob66g.matchmovie.movies.repository.MovieRepository.Specs.*;
 
 
 @Service
@@ -40,6 +47,21 @@ public class MovieCatalogService {
         }
 
         return movieRepository.findExistingIds(tmdbMovieIds);
+    }
+
+
+    @Transactional(readOnly = true)
+    public PageResponse<MovieSearchResponse> discoverCatalogMovies(MovieDiscoverCriteria criteria, Pageable pageable) {
+        Specification<Movie> spec = Specification.allOf(
+                titleContains(criteria.title()),
+                releaseDateFrom(criteria.releaseDateFrom()),
+                releaseDateTo(criteria.releaseDateTo()),
+                runtimeGTE(criteria.runtimeGTE()),
+                runtimeLTE(criteria.runtimeLTE()),
+                hasAllGenres(criteria.genres())
+        );
+
+        return PageResponse.from(movieRepository.findAll(spec, pageable), MovieSearchResponse::fromCatalog);
     }
 
     @Transactional

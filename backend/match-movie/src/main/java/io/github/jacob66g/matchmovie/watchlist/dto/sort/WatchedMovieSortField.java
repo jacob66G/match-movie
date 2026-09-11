@@ -1,4 +1,4 @@
-package io.github.jacob66g.matchmovie.watchlist.sort;
+package io.github.jacob66g.matchmovie.watchlist.dto.sort;
 
 import io.github.jacob66g.matchmovie.common.sort.SortableField;
 import lombok.RequiredArgsConstructor;

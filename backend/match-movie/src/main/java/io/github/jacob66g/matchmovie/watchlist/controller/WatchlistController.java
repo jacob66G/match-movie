@@ -6,8 +6,9 @@ import io.github.jacob66g.matchmovie.security.annotations.AuthenticatedUser;
 import io.github.jacob66g.matchmovie.watchlist.dto.AddToWatchlistRequest;
 import io.github.jacob66g.matchmovie.watchlist.dto.WatchlistItemResponse;
 import io.github.jacob66g.matchmovie.watchlist.service.WatchlistFacade;
-import io.github.jacob66g.matchmovie.watchlist.sort.WatchlistSortField;
+import io.github.jacob66g.matchmovie.watchlist.dto.sort.WatchlistSortField;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -42,7 +43,8 @@ public class WatchlistController {
     }
 
     @DeleteMapping("/{movieId}")
-    public ResponseEntity<Void> removeFromWatchlist(@AuthenticatedUser UUID userId, @PathVariable Long movieId) {
+    public ResponseEntity<Void> removeFromWatchlist(@AuthenticatedUser UUID userId,
+                                                    @PathVariable @Positive Long movieId) {
         watchlistFacade.removeFromWatchlist(userId, movieId);
         return ResponseEntity.noContent().build();
     }

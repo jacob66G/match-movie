@@ -62,7 +62,7 @@ class WatchlistServiceTest {
                     assertThat(response.movie().title()).isEqualTo(TEST_TITLE);
                 });
         assertThat(watchlist.totalElements()).isEqualTo(1);
-        assertThat(watchlist.page()).isZero();
+        assertThat(watchlist.page()).isEqualTo(1);
         assertThat(watchlist.last()).isTrue();
     }
 

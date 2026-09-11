@@ -1,17 +1,18 @@
-package io.github.jacob66g.matchmovie.watchlist.sort;
+package io.github.jacob66g.matchmovie.movies.dto.sort;
 
 import io.github.jacob66g.matchmovie.common.sort.SortableField;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-public enum WatchlistSortField implements SortableField {
-
-    ADDED_AT("addedAt", "addedAt"),
-    TITLE("title", "movie.title"),
-    RELEASE_DATE("releaseDate", "movie.releaseDate"),
-    MOVIE_ID("movieId", "id.movieId");
+public enum MovieSortField implements SortableField {
+    TITLE("title", "title"),
+    RELEASE_DATE("releaseDate", "releaseDate"),
+    RUNTIME("runtime", "runtime"),
+    POPULARITY("popularity", "popularity"),
+    VOTE_COUNT("voteCount", "voteCount");
 
     private final String apiName;
+
     private final String entityPath;
 
     @Override

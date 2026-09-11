@@ -100,10 +100,6 @@ public class Movie implements Persistable<Long> {
             inverseJoinColumns = @JoinColumn(name = "genre_id"))
     private Set<Genre> genres = new LinkedHashSet<>();
 
-    public void markSynced() {
-        this.syncedAt = Instant.now();
-    }
-
     @Builder.Default
     @Transient
     private boolean isNew = true;

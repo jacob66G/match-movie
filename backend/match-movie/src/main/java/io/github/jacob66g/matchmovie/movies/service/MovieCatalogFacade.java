@@ -5,13 +5,15 @@ import io.github.jacob66g.matchmovie.common.exception.ApplicationException;
 import io.github.jacob66g.matchmovie.movies.client.TmdbClient;
 import io.github.jacob66g.matchmovie.movies.client.dto.TmdbMovieDetailsResponse;
 import io.github.jacob66g.matchmovie.movies.client.dto.TmdbSearchResponse;
+import io.github.jacob66g.matchmovie.movies.client.mapper.TmdbSearchMapper;
+import io.github.jacob66g.matchmovie.movies.dto.MovieDiscoverCriteria;
 import io.github.jacob66g.matchmovie.movies.dto.MovieSearchResponse;
 import io.github.jacob66g.matchmovie.movies.exception.MovieErrorCode;
-import io.github.jacob66g.matchmovie.movies.client.mapper.TmdbSearchMapper;
 import io.github.jacob66g.matchmovie.movies.model.Movie;
 import io.github.jacob66g.matchmovie.movies.model.MovieOrigin;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
@@ -36,6 +38,10 @@ public class MovieCatalogFacade {
 
         Set<Long> inCatalogIds = movieCatalogService.findCatalogIds(tmdbSearchMapper.toMovieIds(tmdbResponse));
         return tmdbSearchMapper.toSearchPage(tmdbResponse, inCatalogIds);
+    }
+
+    public PageResponse<MovieSearchResponse> discover(MovieDiscoverCriteria criteria, Pageable pageable) {
+        return movieCatalogService.discoverCatalogMovies(criteria, pageable);
     }
 
     private Movie importFromTmdb(Long tmdbMovieId) {
